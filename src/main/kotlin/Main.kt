@@ -1,5 +1,6 @@
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import rx.Observable
 
 fun main(args: Array<String>) {
@@ -10,25 +11,22 @@ fun main(args: Array<String>) {
     val versionCode = "ulb-en"
     val bookCode = "gen"
 
-    val api = createUnfoldingWordService();
-    val catalog = api.catalog()
-    catalog.subscribe {
-        it.anthologies()
-                .filter { it.slug == anthologyCode }
-                .flatMap { it.languages() }
-                .filter { it.lc == languageCode }
-                .flatMap { it.versions() }
-                .filter { it.slug == versionCode }
-                .flatMap { it.books() }
-                .filter { it.slug == bookCode }
-                .subscribe() {
-                    val request = Observable.fromCallable() {
-                        OkHttpClient.Builder().build().newCall(Request.Builder().url(it.src).build()).execute()
-                    }.subscribe() {
-                        println(it)
-                    }
-                }
-    }
-
+    createUnfoldingWordService()
+            .catalog()
+            .flatMap { it.anthologies() }
+            .filter { it.slug == anthologyCode }
+            .flatMap { it.languages() }
+            .filter { it.lc == languageCode }
+            .flatMap { it.versions() }
+            .filter { it.slug == versionCode }
+            .flatMap { it.books() }
+            .filter { it.slug == bookCode }
+            .flatMap { httpGet(it.src) }
+            .subscribe { println(it) }
 }
 
+fun httpGet(url: String): Observable<Response> {
+    return Observable.fromCallable() {
+        OkHttpClient.Builder().build().newCall(Request.Builder().url(url).build()).execute()
+    }
+}
