@@ -1,3 +1,7 @@
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import rx.Observable
+
 fun main(args: Array<String>) {
 
     // TODO: Don't hard-code these
@@ -21,7 +25,11 @@ fun main(args: Array<String>) {
                                             it.books()
                                                     .filter() { it.slug == bookCode }
                                                     .subscribe() {
-                                                        println(it)
+                                                        val request = Observable.fromCallable() {
+                                                            OkHttpClient.Builder().build().newCall(Request.Builder().url(it.src).build()).execute()
+                                                        }.subscribe() {
+                                                            println(it)
+                                                        }
                                                     }
                                         }
                             }
