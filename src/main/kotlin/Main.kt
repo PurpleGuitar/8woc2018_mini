@@ -14,25 +14,19 @@ fun main(args: Array<String>) {
     val catalog = api.catalog()
     catalog.subscribe {
         it.anthologies()
-                .filter() { it.slug == anthologyCode }
+                .filter { it.slug == anthologyCode }
+                .flatMap { it.languages() }
+                .filter { it.lc == languageCode }
+                .flatMap { it.versions() }
+                .filter { it.slug == versionCode }
+                .flatMap { it.books() }
+                .filter { it.slug == bookCode }
                 .subscribe() {
-                    it.languages()
-                            .filter() { it.lc == languageCode }
-                            .subscribe() {
-                                it.versions()
-                                        .filter() { it.slug == versionCode }
-                                        .subscribe() {
-                                            it.books()
-                                                    .filter() { it.slug == bookCode }
-                                                    .subscribe() {
-                                                        val request = Observable.fromCallable() {
-                                                            OkHttpClient.Builder().build().newCall(Request.Builder().url(it.src).build()).execute()
-                                                        }.subscribe() {
-                                                            println(it)
-                                                        }
-                                                    }
-                                        }
-                            }
+                    val request = Observable.fromCallable() {
+                        OkHttpClient.Builder().build().newCall(Request.Builder().url(it.src).build()).execute()
+                    }.subscribe() {
+                        println(it)
+                    }
                 }
     }
 
