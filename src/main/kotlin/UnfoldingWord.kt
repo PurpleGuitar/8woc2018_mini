@@ -5,15 +5,31 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import rx.Observable
 
-data class Catalog ( val cat: Array<Anthology>)
+data class Catalog(val cat: Array<Anthology>) {
+    fun anthologies(): Observable<Anthology> {
+        return Observable.from(cat)
+    }
+}
 
-data class Anthology (val title: String, val slug: String, val langs: Array<Language>)
+data class Anthology(val slug: String, val title: String, val langs: Array<Language>) {
+    fun languages(): Observable<Language> {
+        return Observable.from(langs)
+    }
+}
 
-data class Language (val lc: String, val vers: Array<Version>)
+data class Language(val lc: String, val vers: Array<Version>) {
+    fun versions(): Observable<Version> {
+        return Observable.from(vers)
+    }
+}
 
-data class Version (val slug: String, val name: String, val toc: Array<Source>)
+data class Version(val slug: String, val name: String, val toc: Array<Book>) {
+    fun books(): Observable<Book> {
+        return Observable.from(toc)
+    }
+}
 
-data class Source(val slug: String, val title: String, val src: String)
+data class Book(val slug: String, val title: String, val src: String)
 
 interface UnfoldingWordAPI {
     @GET("/uw/txt/2/catalog.json")
@@ -22,9 +38,9 @@ interface UnfoldingWordAPI {
 
 fun createUnfoldingWordService(): UnfoldingWordAPI {
     val builder = Retrofit.Builder()
-        .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-        .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl("https://api.unfoldingword.org")
+            .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl("https://api.unfoldingword.org")
     val client = OkHttpClient.Builder().build()
     builder.client(client)
     return builder.build().create(UnfoldingWordAPI::class.java)
