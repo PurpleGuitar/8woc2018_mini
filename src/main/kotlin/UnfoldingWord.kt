@@ -5,7 +5,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import rx.Observable
 
-data class Catalog ( val mod: String = "")
+data class Catalog ( val cat: Array<Anthology>)
+
+data class Anthology (val title: String, val slug: String, val langs: Array<Language>)
+
+data class Language (val lc: String, val vers: Array<Version>)
+
+data class Version (val slug: String, val name: String, val toc: Array<Source>)
+
+data class Source(val slug: String, val title: String, val src: String)
 
 interface UnfoldingWordAPI {
     @GET("/uw/txt/2/catalog.json")
