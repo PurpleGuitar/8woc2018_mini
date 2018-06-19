@@ -34,3 +34,10 @@ out/
 
 .gradle
 /build/
+
+#
+# Other
+#
+
+*.swp
+console.txt
