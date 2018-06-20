@@ -1,23 +1,18 @@
 package demo
 
-import tornadofx.*
 import javafx.scene.text.FontWeight
+import tornadofx.*
+
+class ReaderApp : App(Reader::class)
 
 class Reader : View() {
-    override val root = hbox {
-        label("Hi there!")
-    }
-}
-
-class ReaderApp : App(Reader::class, Styles::class) {
-}
-
-class Styles : Stylesheet() {
-    init {
-        label {
-            fontSize = 20.px
-            fontWeight = FontWeight.BOLD
-            backgroundColor += c("#cecece")
+    override val root = vbox {
+        textarea("Loading, please wait...") {
+            isEditable = false
         }
+    }
+
+    init {
+        title = "Craig's Window"
     }
 }
