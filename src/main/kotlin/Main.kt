@@ -25,6 +25,7 @@ fun main(args: Array<String>) {
             .flatMap { it.body().use { Observable.from(it.string().lines()) } }
             .flatMap { usfmToMarkdown(it) }
             .subscribe { println(it) }
+
 }
 
 fun httpGet(url: String): Observable<Response> {
