@@ -11,7 +11,6 @@ import io.reactivex.schedulers.Schedulers
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
-import javafx.scene.control.Button
 import javafx.scene.control.ComboBox
 import javafx.scene.control.TextArea
 import javafx.scene.layout.Priority
@@ -22,14 +21,15 @@ class ReaderApp : App(ReaderView::class)
 
 class ReaderView : View() {
     private var textArea: TextArea by singleAssign()
-    private var languages: ComboBox<String> by singleAssign()
+    private val languages = FXCollections.observableArrayList("Loading...")
+    private var languagePicker: ComboBox<String> by singleAssign()
     private var books: ComboBox<String> by singleAssign()
     private var catalog: Observable<Catalog> by singleAssign()
     private val catalogLoaded = SimpleBooleanProperty(false)
     override val root = vbox {
         hbox {
-            combobox(SimpleStringProperty(), FXCollections.observableArrayList<String>("Loading...")) {
-                languages = this
+            combobox(values = languages) {
+                languagePicker = this
                 selectionModel.selectFirst()
             }
             combobox(SimpleStringProperty(), FXCollections.observableArrayList<String>("Loading...")) {
@@ -47,7 +47,7 @@ class ReaderView : View() {
                             getUWContentURL(
                                     catalog,
                                     "bible",
-                                    "en",
+                                    languagePicker.selectionModel.selectedItem,
                                     "ulb-en",
                                     "gen")
                                     .observeOnFx()
@@ -76,12 +76,28 @@ class ReaderView : View() {
 
     init {
         title = "Bible Reader"
+        textArea.text = "Loading catalog, please wait..."
         runAsync {
-            println("Loading catalog on thread " + Thread.currentThread().name)
             catalog = createUnfoldingWordService().catalog()
-        } ui {
-            catalogLoaded.set(true)
-            textArea.text = "Ready!"
+            catalog
+                    .flatMap { it.anthologies() }
+                    .filter { it.slug == "bible" }
+                    .flatMap { it.languages() }
+                    .collectInto(ArrayList<String>()) { list, language -> list.add(language.lc) }
+                    .toObservable()
+                    .observeOnFx()
+                    .subscribe {
+                        languages.clear()
+                        languages.addAll(it)
+                        languages.sort()
+                        if (languages.contains("en")) {
+                            languagePicker.selectionModel.select("en")
+                        } else {
+                            languagePicker.selectionModel.selectFirst()
+                        }
+                        catalogLoaded.set(true)
+                        textArea.text = "Ready!"
+                    }
         }
     }
 }
