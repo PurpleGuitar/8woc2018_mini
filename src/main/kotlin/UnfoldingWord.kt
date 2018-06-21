@@ -46,9 +46,8 @@ fun createUnfoldingWordService(): UnfoldingWordAPI {
     return builder.build().create(UnfoldingWordAPI::class.java)
 }
 
-fun getUWContentURL(anthologyCode: String, languageCode: String, versionCode: String, bookCode: String): Observable<String> {
-    return createUnfoldingWordService()
-            .catalog()
+fun getUWContentURL(catalog: Observable<Catalog>, anthologyCode: String, languageCode: String, versionCode: String, bookCode: String): Observable<String> {
+    return catalog
             .flatMap { it.anthologies() }
             .filter { it.slug == anthologyCode }
             .flatMap { it.languages() }

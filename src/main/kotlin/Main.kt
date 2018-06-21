@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
     val versionCode = "ulb-en"
     val bookCode = "gen"
 
-    getUWContentURL(anthologyCode, languageCode, versionCode, bookCode)
+    getUWContentURL(createUnfoldingWordService().catalog(), anthologyCode, languageCode, versionCode, bookCode)
             .flatMap { httpGet(it) }
             .flatMap { it.body().use { Observable.fromIterable(it.string().lines()) } }
             .flatMap { usfmToMarkdown(it) }
