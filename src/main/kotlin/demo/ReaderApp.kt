@@ -23,18 +23,40 @@ class ReaderView : View() {
     private var textArea: TextArea by singleAssign()
     private val languages = FXCollections.observableArrayList("Loading...")
     private var languagePicker: ComboBox<String> by singleAssign()
-    private var books: ComboBox<String> by singleAssign()
+    private val selectedLanguage = SimpleStringProperty()
+    private val versions = FXCollections.observableArrayList("Loading...")
+    private var versionPicker: ComboBox<String> by singleAssign()
+    private val selectedVersion = SimpleStringProperty()
     private var catalog: Observable<Catalog> by singleAssign()
     private val catalogLoaded = SimpleBooleanProperty(false)
     override val root = vbox {
         hbox {
-            combobox(values = languages) {
+            combobox(selectedLanguage, languages) {
                 languagePicker = this
-                selectionModel.selectFirst()
+                selectedLanguage.set("Loading...")
+                setOnAction {
+                    catalog
+                            .flatMap { it.anthologies() }
+                            .filter { it.slug == "bible" }
+                            .flatMap { it.languages() }
+                            .filter { it.lc == selectedLanguage.value }
+                            .flatMap { it.versions() }
+                            .collectInto(ArrayList<String>()) { list, item -> list.add(item.slug) }
+                            .toObservable()
+                            .observeOnFx()
+                            .subscribe {
+                                versions.clear()
+                                versions.addAll(it)
+                                versions.sort()
+                                versionPicker.selectionModel.selectFirst()
+                            }
+                    catalogLoaded.set(true)
+                    textArea.text = "Ready!"
+                }
             }
-            combobox(SimpleStringProperty(), FXCollections.observableArrayList<String>("Loading...")) {
-                books = this
-                selectionModel.selectFirst()
+            combobox(selectedVersion, versions) {
+                versionPicker = this
+                selectedVersion.set("Loading...")
             }
             button("Read it!") {
                 enableWhen(catalogLoaded)
@@ -47,8 +69,8 @@ class ReaderView : View() {
                             getUWContentURL(
                                     catalog,
                                     "bible",
-                                    languagePicker.selectionModel.selectedItem,
-                                    "ulb-en",
+                                    selectedLanguage.value,
+                                    selectedVersion.value,
                                     "gen")
                                     .observeOnFx()
                                     .doOnNext { textArea.text = "Loading USFM, please wait..." }
@@ -91,12 +113,11 @@ class ReaderView : View() {
                         languages.addAll(it)
                         languages.sort()
                         if (languages.contains("en")) {
-                            languagePicker.selectionModel.select("en")
+                            selectedLanguage.set("en")
                         } else {
                             languagePicker.selectionModel.selectFirst()
                         }
-                        catalogLoaded.set(true)
-                        textArea.text = "Ready!"
+
                     }
         }
     }
