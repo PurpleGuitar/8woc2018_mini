@@ -36,12 +36,11 @@ class ReaderView : View() {
                                 .observeOn(Schedulers.io())
                                 .flatMap { it.body().use { Observable.fromIterable(it.string().lines()) } }
                                 .flatMap { usfmToMarkdown(it) }
-                                .collectInto(StringBuilder(), { builder, item -> builder.append(item + "\n") })
+                                .collectInto(StringBuilder()) { builder, item -> builder.append(item + "\n") }
                                 .toObservable()
+                                .flatMap { Observable.just(it.toString()) }
                                 .observeOnFx()
-                                .subscribe { sb ->
-                                    textArea.text = sb.toString()
-                                }
+                                .subscribe { textArea.text = it }
                     }
         }
         textarea {
