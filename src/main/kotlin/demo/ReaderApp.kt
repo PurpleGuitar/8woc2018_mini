@@ -20,15 +20,23 @@ import usfmToMarkdown
 class ReaderApp : App(ReaderView::class)
 
 class ReaderView : View() {
-    private var textArea: TextArea by singleAssign()
+
+    private var catalog: Observable<Catalog> by singleAssign()
+    private val catalogLoaded = SimpleBooleanProperty(false)
+
     private val languages = FXCollections.observableArrayList("Loading...")
     private var languagePicker: ComboBox<String> by singleAssign()
     private val selectedLanguage = SimpleStringProperty()
+
     private val versions = FXCollections.observableArrayList("Loading...")
     private var versionPicker: ComboBox<String> by singleAssign()
     private val selectedVersion = SimpleStringProperty()
-    private var catalog: Observable<Catalog> by singleAssign()
-    private val catalogLoaded = SimpleBooleanProperty(false)
+
+    private val books = FXCollections.observableArrayList("Loading...")
+    private var bookPicker: ComboBox<String> by singleAssign()
+    private val selectedBook = SimpleStringProperty()
+
+    private var textArea: TextArea by singleAssign()
     override val root = vbox {
         hbox {
             combobox(selectedLanguage, languages) {
@@ -50,13 +58,36 @@ class ReaderView : View() {
                                 versions.sort()
                                 versionPicker.selectionModel.selectFirst()
                             }
-                    catalogLoaded.set(true)
-                    textArea.text = "Ready!"
                 }
             }
             combobox(selectedVersion, versions) {
                 versionPicker = this
                 selectedVersion.set("Loading...")
+                setOnAction {
+                    catalog
+                            .flatMap { it.anthologies() }
+                            .filter { it.slug == "bible" }
+                            .flatMap { it.languages() }
+                            .filter { it.lc == selectedLanguage.value }
+                            .flatMap { it.versions() }
+                            .filter { it.slug == selectedVersion.value }
+                            .flatMap { it.books() }
+                            .collectInto(ArrayList<String>()) { list, item -> list.add(item.slug) }
+                            .toObservable()
+                            .observeOnFx()
+                            .subscribe {
+                                books.clear()
+                                books.addAll(it)
+                                books.sort()
+                                bookPicker.selectionModel.selectFirst()
+                            }
+                    catalogLoaded.set(true)
+                    textArea.text = "Ready!"
+                }
+            }
+            combobox(selectedBook, books) {
+                bookPicker = this
+                selectedBook.set("Loading...")
             }
             button("Read it!") {
                 enableWhen(catalogLoaded)
@@ -71,7 +102,7 @@ class ReaderView : View() {
                                     "bible",
                                     selectedLanguage.value,
                                     selectedVersion.value,
-                                    "gen")
+                                    selectedBook.value)
                                     .observeOnFx()
                                     .doOnNext { textArea.text = "Loading USFM, please wait..." }
                                     .observeOn(Schedulers.io())
